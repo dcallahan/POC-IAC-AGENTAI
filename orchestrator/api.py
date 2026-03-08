@@ -11,6 +11,7 @@ from typing import Any
 from fastapi import BackgroundTasks, FastAPI, HTTPException
 from pydantic import BaseModel
 
+from orchestrator.approval import ApprovalResult, pending_approvals
 from orchestrator.factory import AgentFactory, ValidationError
 from orchestrator.main import generate_task_id, run_task
 
@@ -143,3 +144,24 @@ async def get_task(task_id: str):
         agent=entry["agent"],
         result=entry["result"],
     )
+
+
+# ---------------------------------------------------------------------------
+# Approval callback endpoints
+# ---------------------------------------------------------------------------
+@app.post("/approve/{task_id}")
+async def approve_task(task_id: str):
+    if task_id in pending_approvals:
+        pending_approvals[task_id].set_result(
+            ApprovalResult(approved=True, approver="teams-user", task_id=task_id)
+        )
+    return {"status": "approved", "task_id": task_id}
+
+
+@app.post("/deny/{task_id}")
+async def deny_task(task_id: str):
+    if task_id in pending_approvals:
+        pending_approvals[task_id].set_result(
+            ApprovalResult(approved=False, approver="teams-user", task_id=task_id)
+        )
+    return {"status": "denied", "task_id": task_id}

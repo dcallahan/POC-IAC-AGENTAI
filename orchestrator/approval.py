@@ -1,7 +1,7 @@
 """Teams approval flow via incoming webhook and adaptive cards.
 
 Posts an adaptive card to a Teams channel with Approve/Deny buttons.
-Buttons callback to a lightweight HTTP server running in the orchestrator.
+Buttons callback to the FastAPI server running in the orchestrator.
 """
 from __future__ import annotations
 
@@ -10,7 +10,9 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 import aiohttp
-from aiohttp import web
+
+# Module-level dict shared with FastAPI callback routes
+pending_approvals: dict[str, asyncio.Future] = {}
 
 
 @dataclass
@@ -34,10 +36,14 @@ class TeamsApproval:
         self.callback_host = callback_host
         self.callback_port = callback_port
         self.timeout_seconds = timeout_seconds
-        self._pending: dict[str, asyncio.Future] = {}
 
-    def build_adaptive_card(self, task_id: str, action_summary: str) -> dict:
-        callback_base = f"http://{self.callback_host}:{self.callback_port}"
+    def build_adaptive_card(
+        self,
+        task_id: str,
+        action_summary: str,
+        callback_base_url: str | None = None,
+    ) -> dict:
+        base = callback_base_url or f"http://{self.callback_host}:{self.callback_port}"
         return {
             "type": "message",
             "attachments": [
@@ -75,14 +81,14 @@ class TeamsApproval:
                                 "type": "Action.Http",
                                 "title": "Approve",
                                 "method": "POST",
-                                "url": f"{callback_base}/approve/{task_id}",
+                                "url": f"{base}/approve/{task_id}",
                                 "style": "positive",
                             },
                             {
                                 "type": "Action.Http",
                                 "title": "Deny",
                                 "method": "POST",
-                                "url": f"{callback_base}/deny/{task_id}",
+                                "url": f"{base}/deny/{task_id}",
                                 "style": "destructive",
                             },
                         ],
@@ -103,10 +109,7 @@ class TeamsApproval:
     async def wait_for_approval(self, task_id: str, action_summary: str) -> ApprovalResult:
         """Send adaptive card and wait for callback response."""
         future: asyncio.Future[ApprovalResult] = asyncio.get_event_loop().create_future()
-        self._pending[task_id] = future
-
-        # Start callback server if not running
-        runner = await self._start_callback_server()
+        pending_approvals[task_id] = future
 
         # Send the card
         await self.send_card(task_id, action_summary)
@@ -119,33 +122,6 @@ class TeamsApproval:
                 approved=False, approver=None, task_id=task_id, timed_out=True
             )
         finally:
-            self._pending.pop(task_id, None)
-            await runner.cleanup()
+            pending_approvals.pop(task_id, None)
 
         return result
-
-    async def _start_callback_server(self) -> web.AppRunner:
-        app = web.Application()
-        app.router.add_post("/approve/{task_id}", self._handle_approve)
-        app.router.add_post("/deny/{task_id}", self._handle_deny)
-        runner = web.AppRunner(app)
-        await runner.setup()
-        site = web.TCPSite(runner, self.callback_host, self.callback_port)
-        await site.start()
-        return runner
-
-    async def _handle_approve(self, request: web.Request) -> web.Response:
-        task_id = request.match_info["task_id"]
-        if task_id in self._pending:
-            self._pending[task_id].set_result(
-                ApprovalResult(approved=True, approver="teams-user", task_id=task_id)
-            )
-        return web.Response(text="Approved")
-
-    async def _handle_deny(self, request: web.Request) -> web.Response:
-        task_id = request.match_info["task_id"]
-        if task_id in self._pending:
-            self._pending[task_id].set_result(
-                ApprovalResult(approved=False, approver="teams-user", task_id=task_id)
-            )
-        return web.Response(text="Denied")
