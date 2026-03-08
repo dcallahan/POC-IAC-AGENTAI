@@ -37,5 +37,13 @@ class Config:
         )
 
     @property
+    def approval_callback_base_url(self) -> str:
+        """Base URL for Teams adaptive card callback buttons."""
+        fqdn = os.environ.get("CONTAINER_APP_FQDN")
+        if fqdn:
+            return f"https://{fqdn}"
+        return f"http://{self.approval_callback_host}:{self.approval_callback_port}"
+
+    @property
     def foundry_base_url(self) -> str:
         return f"https://{self.foundry_resource}.services.ai.azure.com/anthropic"

@@ -4,6 +4,7 @@
 Usage:
     python -m orchestrator.main --agent greenfield-deprovision --input user_email=jsmith@meritage.com
     python -m orchestrator.main --agent greenfield-deprovision --input user_email=jsmith@meritage.com --input action=delete
+    python -m orchestrator.main --serve --port 8000
 """
 from __future__ import annotations
 
@@ -104,12 +105,24 @@ def main():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
     parser = argparse.ArgumentParser(description="IGA Browser Agent")
-    parser.add_argument("--agent", required=True, help="Name of the agent YAML template (without .yaml)")
+    parser.add_argument("--agent", required=False, help="Name of the agent YAML template (without .yaml)")
     parser.add_argument("--input", action="append", default=[], help="Input as key=value (repeatable)")
     parser.add_argument("--agents-dir", default="agents", help="Directory containing agent YAML files")
     parser.add_argument("--headed", action="store_true", help="Run browser in headed mode (visible)")
+    parser.add_argument("--serve", action="store_true", help="Start API server instead of running a single task")
+    parser.add_argument("--port", type=int, default=8000, help="API server port (with --serve)")
 
     args = parser.parse_args()
+
+    if args.serve:
+        import uvicorn
+        from orchestrator.api import app
+        uvicorn.run(app, host="0.0.0.0", port=args.port)
+        return
+
+    if not args.agent:
+        parser.error("--agent is required when not using --serve")
+
     inputs = parse_inputs(args.input)
 
     result = asyncio.run(run_task(
