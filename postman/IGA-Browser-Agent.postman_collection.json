@@ -1,0 +1,518 @@
+{
+	"info": {
+		"name": "IGA Browser Agent",
+		"description": "API collection for the IGA Browser Agent — triggers autonomous browser automation tasks for Identity Governance operations against Greenfield.AI.\n\n## Setup\n1. Set the `base_url` variable to your Container App URL or `http://localhost:8000` for local dev\n2. Run a task via any of the \"Start Task\" requests\n3. Copy the returned `task_id` into the `task_id` variable\n4. Poll status with \"Get Task Status\"\n\n## Autonomous Mode\nWhen `TEAMS_WEBHOOK_URL` is not set, all agents run fully autonomously with no approval required.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "task_id",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "System",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": ["{{base_url}}"],
+							"path": ["health"]
+						},
+						"description": "Verify the API is running and healthy."
+					}
+				},
+				{
+					"name": "List Available Agents",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/agents",
+							"host": ["{{base_url}}"],
+							"path": ["api", "agents"]
+						},
+						"description": "Returns all available YAML agent templates with their required inputs, types, and defaults."
+					}
+				},
+				{
+					"name": "Get Task Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/tasks/{{task_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "tasks", "{{task_id}}"]
+						},
+						"description": "Poll the status of a running task. Status values: running, completed, failed.\n\nSet the `task_id` collection variable after starting a task."
+					}
+				}
+			]
+		},
+		{
+			"name": "User Management",
+			"item": [
+				{
+					"name": "Provision User (Add User)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 202) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('task_id', jsonData.task_id);",
+									"    console.log('Task started: ' + jsonData.task_id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"agent\": \"greenfield-provision\",\n    \"inputs\": {\n        \"full_name\": \"John Smith\",\n        \"email\": \"jsmith@meritage.com\",\n        \"department\": \"Engineering\",\n        \"title\": \"Software Developer\",\n        \"role\": \"user\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/tasks",
+							"host": ["{{base_url}}"],
+							"path": ["api", "tasks"]
+						},
+						"description": "Create a new user in Greenfield.AI.\n\n**Required inputs:**\n- `full_name` — User's full name\n- `email` — User's email address\n- `department` — Department name\n- `title` — Job title\n- `role` — Role to assign (e.g. user, admin)"
+					}
+				},
+				{
+					"name": "Deprovision User (Disable)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 202) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('task_id', jsonData.task_id);",
+									"    console.log('Task started: ' + jsonData.task_id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"agent\": \"greenfield-deprovision\",\n    \"inputs\": {\n        \"user_email\": \"jsmith@meritage.com\",\n        \"action\": \"disable\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/tasks",
+							"host": ["{{base_url}}"],
+							"path": ["api", "tasks"]
+						},
+						"description": "Disable or delete a user in Greenfield.AI.\n\n**Required inputs:**\n- `user_email` — Email of the user to deprovision\n\n**Optional inputs:**\n- `action` — `disable` (default) or `delete`"
+					}
+				},
+				{
+					"name": "Deprovision User (Delete)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 202) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('task_id', jsonData.task_id);",
+									"    console.log('Task started: ' + jsonData.task_id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"agent\": \"greenfield-deprovision\",\n    \"inputs\": {\n        \"user_email\": \"jsmith@meritage.com\",\n        \"action\": \"delete\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/tasks",
+							"host": ["{{base_url}}"],
+							"path": ["api", "tasks"]
+						},
+						"description": "Permanently delete a user from Greenfield.AI.\n\n**Required inputs:**\n- `user_email` — Email of the user to delete\n- `action` — Set to `delete`"
+					}
+				},
+				{
+					"name": "Enable Account",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 202) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('task_id', jsonData.task_id);",
+									"    console.log('Task started: ' + jsonData.task_id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"agent\": \"greenfield-enable-account\",\n    \"inputs\": {\n        \"user_email\": \"jsmith@meritage.com\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/tasks",
+							"host": ["{{base_url}}"],
+							"path": ["api", "tasks"]
+						},
+						"description": "Re-enable a previously disabled user account in Greenfield.AI.\n\n**Required inputs:**\n- `user_email` — Email of the disabled user to re-enable"
+					}
+				}
+			]
+		},
+		{
+			"name": "Entitlement Management",
+			"item": [
+				{
+					"name": "Add Role to User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 202) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('task_id', jsonData.task_id);",
+									"    console.log('Task started: ' + jsonData.task_id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"agent\": \"greenfield-add-entitlement\",\n    \"inputs\": {\n        \"user_email\": \"jsmith@meritage.com\",\n        \"entitlement_type\": \"role\",\n        \"entitlement_name\": \"admin\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/tasks",
+							"host": ["{{base_url}}"],
+							"path": ["api", "tasks"]
+						},
+						"description": "Assign a role to a user in Greenfield.AI.\n\n**Required inputs:**\n- `user_email` — Target user\n- `entitlement_name` — Name of the role to assign\n\n**Optional inputs:**\n- `entitlement_type` — `role` (default), `permission`, or `group`"
+					}
+				},
+				{
+					"name": "Add Permission to User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 202) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('task_id', jsonData.task_id);",
+									"    console.log('Task started: ' + jsonData.task_id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"agent\": \"greenfield-add-entitlement\",\n    \"inputs\": {\n        \"user_email\": \"jsmith@meritage.com\",\n        \"entitlement_type\": \"permission\",\n        \"entitlement_name\": \"manage_deals\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/tasks",
+							"host": ["{{base_url}}"],
+							"path": ["api", "tasks"]
+						},
+						"description": "Assign a permission to a user in Greenfield.AI.\n\n**Required inputs:**\n- `user_email` — Target user\n- `entitlement_type` — Set to `permission`\n- `entitlement_name` — Name of the permission to assign"
+					}
+				},
+				{
+					"name": "Add User to Group",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 202) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('task_id', jsonData.task_id);",
+									"    console.log('Task started: ' + jsonData.task_id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"agent\": \"greenfield-add-entitlement\",\n    \"inputs\": {\n        \"user_email\": \"jsmith@meritage.com\",\n        \"entitlement_type\": \"group\",\n        \"entitlement_name\": \"Phoenix Division\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/tasks",
+							"host": ["{{base_url}}"],
+							"path": ["api", "tasks"]
+						},
+						"description": "Add a user to a group in Greenfield.AI.\n\n**Required inputs:**\n- `user_email` — Target user\n- `entitlement_type` — Set to `group`\n- `entitlement_name` — Name of the group"
+					}
+				},
+				{
+					"name": "Remove Role from User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 202) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('task_id', jsonData.task_id);",
+									"    console.log('Task started: ' + jsonData.task_id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"agent\": \"greenfield-remove-entitlement\",\n    \"inputs\": {\n        \"user_email\": \"jsmith@meritage.com\",\n        \"entitlement_type\": \"role\",\n        \"entitlement_name\": \"admin\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/tasks",
+							"host": ["{{base_url}}"],
+							"path": ["api", "tasks"]
+						},
+						"description": "Revoke a role from a user in Greenfield.AI.\n\n**Required inputs:**\n- `user_email` — Target user\n- `entitlement_name` — Name of the role to revoke\n\n**Optional inputs:**\n- `entitlement_type` — `role` (default), `permission`, or `group`"
+					}
+				},
+				{
+					"name": "Remove Permission from User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 202) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('task_id', jsonData.task_id);",
+									"    console.log('Task started: ' + jsonData.task_id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"agent\": \"greenfield-remove-entitlement\",\n    \"inputs\": {\n        \"user_email\": \"jsmith@meritage.com\",\n        \"entitlement_type\": \"permission\",\n        \"entitlement_name\": \"manage_deals\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/tasks",
+							"host": ["{{base_url}}"],
+							"path": ["api", "tasks"]
+						},
+						"description": "Revoke a permission from a user in Greenfield.AI."
+					}
+				}
+			]
+		},
+		{
+			"name": "Access Review",
+			"item": [
+				{
+					"name": "Access Review (Single User)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 202) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('task_id', jsonData.task_id);",
+									"    console.log('Task started: ' + jsonData.task_id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"agent\": \"greenfield-access-review\",\n    \"inputs\": {\n        \"user_email\": \"jsmith@meritage.com\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/tasks",
+							"host": ["{{base_url}}"],
+							"path": ["api", "tasks"]
+						},
+						"description": "Read-only access review for a specific user. Extracts all roles, permissions, and group memberships.\n\n**Optional inputs:**\n- `user_email` — If provided, reviews a single user. If omitted, reviews all users."
+					}
+				},
+				{
+					"name": "Access Review (All Users)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 202) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('task_id', jsonData.task_id);",
+									"    console.log('Task started: ' + jsonData.task_id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"agent\": \"greenfield-access-review\",\n    \"inputs\": {}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/tasks",
+							"host": ["{{base_url}}"],
+							"path": ["api", "tasks"]
+						},
+						"description": "Read-only access review for ALL users. Iterates through the user list and extracts entitlements for each.\n\nNo approval required — this is a read-only operation."
+					}
+				}
+			]
+		},
+		{
+			"name": "Approval Callbacks",
+			"item": [
+				{
+					"name": "Approve Task",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/approve/{{task_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["approve", "{{task_id}}"]
+						},
+						"description": "Manually approve a task that is waiting for confirmation.\n\nThis is normally called by Teams adaptive card buttons, but can be triggered manually for testing."
+					}
+				},
+				{
+					"name": "Deny Task",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/deny/{{task_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["deny", "{{task_id}}"]
+						},
+						"description": "Manually deny a task that is waiting for confirmation. The task will be marked as failed."
+					}
+				}
+			]
+		}
+	]
+}
