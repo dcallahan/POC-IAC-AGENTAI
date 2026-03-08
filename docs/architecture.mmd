@@ -1,0 +1,83 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0A1F3F', 'primaryTextColor': '#FFFFFF', 'primaryBorderColor': '#00A3E0', 'lineColor': '#00A3E0', 'secondaryColor': '#E8F4FD', 'tertiaryColor': '#F4F6F8', 'fontFamily': 'Segoe UI, sans-serif', 'fontSize': '13px' }, 'flowchart': { 'nodeSpacing': 25, 'rankSpacing': 60, 'curve': 'basis', 'padding': 15 }}}%%
+
+flowchart TB
+    CLI["🧑‍💻 <b>IGA Operator</b><br/>python -m orchestrator.main<br/>--agent template --input k=v"]
+
+    CLI -->|"1. Select YAML template"| TEMPLATES
+
+    subgraph TEMPLATES["📋 YAML Agent Factory — 6 IGA Workflows"]
+        direction LR
+        T1["Add User"]
+        T2["Remove User"]
+        T3["Add Entitlement"]
+        T4["Remove Entitlement"]
+        T5["Enable Account"]
+        T6["Access Review"]
+    end
+
+    TEMPLATES -->|"2. Rendered instructions + inputs"| LOOP
+
+    subgraph CORE["⚙️ Python Orchestrator"]
+        direction LR
+        LOOP["<b>Agentic Loop</b><br/><i>agent_loop.py</i><br/>While not complete:<br/>  screenshot → Claude → tool calls → execute"]
+        TOOLS["<b>9 Browser Tools</b><br/><i>navigate, click, type_text</i><br/><i>screenshot, read_page, scroll</i><br/><i>select_option, task_complete</i><br/><i>request_confirmation</i>"]
+    end
+
+    LOOP <-->|"3. Screenshot + context ⬆️<br/>Tool calls ⬇️"| CLAUDE
+
+    CLAUDE["🤖 <b>Claude Sonnet 4.6</b><br/><i>Azure AI Foundry — East US2</i><br/>Vision + Tool Use<br/>200K context window"]
+
+    LOOP -->|"4. Execute tool calls"| BROWSER
+
+    subgraph BROWSER["🌐 Browser Execution — Playwright + Headless Chrome"]
+        direction LR
+        CTRL["<b>Browser Controller</b><br/><i>NL descriptions →</i><br/><i>get_by_role / get_by_text</i><br/><i>get_by_label / get_by_placeholder</i>"]
+        CTRL --> GF["🏠 <b>Greenfield.AI</b><br/><i>Next.js + Supabase</i>"]
+        CTRL --> FUTURE["🔌 <b>Future Apps</b><br/><i>KnowBe4, Saviynt</i><br/><i>ServiceNow, etc.</i>"]
+    end
+
+    LOOP -->|"5. Confirmation gate?"| TEAMS
+    TEAMS["💬 <b>Microsoft Teams</b><br/><i>Incoming Webhook → Adaptive Card</i><br/>Approve ✅ / Deny ❌<br/><i>Callback → resume or abort</i>"]
+    TEAMS -->|"Approved / Denied"| LOOP
+
+    LOOP -->|"6. Every step"| EVIDENCE
+
+    subgraph EVIDENCE["📸 Evidence Pipeline"]
+        direction LR
+        CAPTURE["Screenshot capture<br/>SHA-256 hash"]
+        CAPTURE --> UPLOAD["Upload to Blob<br/>Log to audit JSON"]
+    end
+
+    EVIDENCE -->|"7. Upload"| BLOB
+
+    subgraph INFRA["☁️ Azure Infrastructure — Bicep Deployed"]
+        direction LR
+        BLOB["📦 <b>Blob Storage</b><br/><i>stigaagentdev</i><br/>iga-evidence/<br/>  {task_id}/{step}.png<br/>  {task_id}/audit_log.json"]
+        KV["🔑 <b>Key Vault</b><br/><i>kv-iga-agent-dev</i><br/>foundry-api-key<br/>teams-webhook-url"]
+        ENTRA["🛡️ <b>Entra ID</b><br/>Service Principal<br/>Managed Identity<br/>SSO Sessions"]
+    end
+
+    KV -.->|"secrets at startup"| CORE
+    ENTRA -.->|"auth"| CLAUDE
+    ENTRA -.->|"SSO sessions"| BROWSER
+
+    %% Styling
+    classDef operator fill:#0A1F3F,stroke:#00A3E0,color:#FFFFFF,stroke-width:2px
+    classDef template fill:#2D5F2D,stroke:#4CAF50,color:#FFFFFF,stroke-width:1px
+    classDef engine fill:#1B3A5C,stroke:#00A3E0,color:#FFFFFF,stroke-width:2px
+    classDef ai fill:#6B21A8,stroke:#9333EA,color:#FFFFFF,stroke-width:2px
+    classDef browser fill:#1E40AF,stroke:#3B82F6,color:#FFFFFF,stroke-width:2px
+    classDef teams fill:#6264A7,stroke:#464775,color:#FFFFFF,stroke-width:2px
+    classDef evidence fill:#B45309,stroke:#F59E0B,color:#FFFFFF,stroke-width:2px
+    classDef azure fill:#0078D4,stroke:#005A9E,color:#FFFFFF,stroke-width:2px
+    classDef target fill:#0E7490,stroke:#06B6D4,color:#FFFFFF,stroke-width:1px
+
+    class CLI operator
+    class T1,T2,T3,T4,T5,T6 template
+    class LOOP,TOOLS engine
+    class CLAUDE ai
+    class CTRL browser
+    class GF,FUTURE target
+    class TEAMS teams
+    class CAPTURE,UPLOAD evidence
+    class BLOB,KV,ENTRA azure
