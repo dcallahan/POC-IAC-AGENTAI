@@ -30,7 +30,7 @@ class Config:
             foundry_model=os.environ.get("FOUNDRY_MODEL", "claude-sonnet-4-6"),
             azure_storage_connection_string=require("AZURE_STORAGE_CONNECTION_STRING"),
             evidence_container=os.environ.get("EVIDENCE_CONTAINER", "iga-evidence"),
-            teams_webhook_url=require("TEAMS_WEBHOOK_URL"),
+            teams_webhook_url=os.environ.get("TEAMS_WEBHOOK_URL", ""),
             approval_callback_host=os.environ.get("APPROVAL_CALLBACK_HOST", "0.0.0.0"),
             approval_callback_port=int(os.environ.get("APPROVAL_CALLBACK_PORT", "8080")),
             approval_timeout_seconds=int(os.environ.get("APPROVAL_TIMEOUT_SECONDS", "300")),

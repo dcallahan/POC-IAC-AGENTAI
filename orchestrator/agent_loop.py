@@ -33,7 +33,7 @@ class AgentLoop:
         claude_client,
         browser: BrowserController,
         evidence: EvidenceCollector,
-        approval: TeamsApproval,
+        approval: TeamsApproval | None = None,
     ):
         self.claude = claude_client
         self.browser = browser
@@ -104,18 +104,21 @@ class AgentLoop:
 
                 # Handle confirmation requests
                 if tool_name == "request_confirmation":
-                    approval_result = await self.approval.wait_for_approval(
-                        task_id=task_id,
-                        action_summary=tool_input["summary"],
-                    )
-                    if not approval_result.approved:
-                        self.evidence.finalize(task_id)
-                        return TaskResult(
-                            success=False,
-                            summary=f"Denied: {tool_input['summary']}",
+                    if self.approval:
+                        approval_result = await self.approval.wait_for_approval(
                             task_id=task_id,
-                            steps_taken=step,
+                            action_summary=tool_input["summary"],
                         )
+                        if not approval_result.approved:
+                            self.evidence.finalize(task_id)
+                            return TaskResult(
+                                success=False,
+                                summary=f"Denied: {tool_input['summary']}",
+                                task_id=task_id,
+                                steps_taken=step,
+                            )
+                    else:
+                        logger.info(f"Auto-approved (no webhook): {tool_input['summary']}")
                     tool_results.append({
                         "type": "tool_result",
                         "tool_use_id": tool_id,
@@ -126,23 +129,30 @@ class AgentLoop:
                 # Check confirmation gates from YAML
                 confirmation = None
                 if self._requires_confirmation(tool_name, agent):
-                    gate = self._matching_gate(tool_name, agent)
-                    approval_result = await self.approval.wait_for_approval(
-                        task_id=task_id,
-                        action_summary=gate.message_template if gate else f"{tool_name}: {tool_input}",
-                    )
-                    if not approval_result.approved:
-                        self.evidence.finalize(task_id)
-                        return TaskResult(
-                            success=False,
-                            summary=f"Denied at step {step}",
+                    if self.approval:
+                        gate = self._matching_gate(tool_name, agent)
+                        approval_result = await self.approval.wait_for_approval(
                             task_id=task_id,
-                            steps_taken=step,
+                            action_summary=gate.message_template if gate else f"{tool_name}: {tool_input}",
                         )
-                    confirmation = {
-                        "approved_by": approval_result.approver,
-                        "approved_at": approval_result.timestamp,
-                    }
+                        if not approval_result.approved:
+                            self.evidence.finalize(task_id)
+                            return TaskResult(
+                                success=False,
+                                summary=f"Denied at step {step}",
+                                task_id=task_id,
+                                steps_taken=step,
+                            )
+                        confirmation = {
+                            "approved_by": approval_result.approver,
+                            "approved_at": approval_result.timestamp,
+                        }
+                    else:
+                        logger.info(f"Auto-approved gate (no webhook): {tool_name}")
+                        confirmation = {
+                            "approved_by": "auto-approved",
+                            "approved_at": datetime.now(timezone.utc).isoformat(),
+                        }
 
                 # Execute browser action
                 result = await self._execute_tool(tool_name, tool_input)

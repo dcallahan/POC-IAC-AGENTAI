@@ -60,13 +60,15 @@ async def run_task(
         container_name=config.evidence_container,
     )
 
-    # Initialize Teams approval
-    approval = TeamsApproval(
-        webhook_url=config.teams_webhook_url,
-        callback_host=config.approval_callback_host,
-        callback_port=config.approval_callback_port,
-        timeout_seconds=config.approval_timeout_seconds,
-    )
+    # Initialize Teams approval (None = auto-approve, fully autonomous)
+    approval = None
+    if config.teams_webhook_url:
+        approval = TeamsApproval(
+            webhook_url=config.teams_webhook_url,
+            callback_host=config.approval_callback_host,
+            callback_port=config.approval_callback_port,
+            timeout_seconds=config.approval_timeout_seconds,
+        )
 
     # Launch browser and run agent loop
     async with async_playwright() as pw:
